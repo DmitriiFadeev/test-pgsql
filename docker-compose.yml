@@ -1,0 +1,68 @@
+#version: "3"
+
+services:
+    postgres:
+        image: postgres:16.0
+        environment:
+            POSTGRES_DB: ${MYSQL_DATABASE}
+            POSTGRES_USER: ${MYSQL_USER}
+            POSTGRES_PASSWORD: ${MYSQL_PASSWORD}
+        ports:
+            - "5432:5432"
+        volumes:
+#            - db-data:/var/lib/postgresql/data:rw
+            # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+             - ./data/db/postgresql/data:/var/lib/postgresql/data:rw
+#        networks:
+#            - symfony_app
+    db:
+        image: mysql:8.0.33
+        platform: linux/x86_64
+        command: --default-authentication-plugin=mysql_native_password
+        volumes:
+            - db_app:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${MYSQL_DATABASE}
+            MYSQL_USER: ${MYSQL_USER}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        ports:
+            - 3306:3306
+#        networks:
+#            - symfony_app
+    php:
+        build:
+            context: ./php
+            args:
+                TIMEZONE: ${TIMEZONE}
+        volumes:
+            - ../:/var/www/symfony:cached
+#            - symfony_app_var:/var/www/symfony/var
+#если раскоментировать, то в папке vendor локально нет файлов
+#            - symfony_app_vendor:/var/www/symfony/vendor
+#        networks:
+#            - symfony_app
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+    nginx:
+        build:
+            context: ./nginx
+        volumes:
+            - ../:/var/www/symfony:cached
+#            - symfony_app_var:/var/www/symfony/var
+#если раскоментировать, то в папке vendor локально нет файлов
+#            - symfony_app_vendor:/var/www/symfony/vendor
+        ports:
+            - 80:80
+#        networks:
+#            - symfony_app
+        env_file:
+            - .env.nginx.local
+
+volumes:
+#    symfony_app_var:
+#    symfony_app_vendor:
+    db_app:
+
+#networks:
+#    symfony_app:
